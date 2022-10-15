@@ -1,0 +1,5 @@
+.vscode/*
+.spyproject/*
+venv/*
+data/_old/*
+*.html
