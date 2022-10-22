@@ -1,6 +1,4 @@
 
-import logging
-
 import cdd
 import numpy as np
 import pandas as pd
@@ -42,36 +40,6 @@ def compute_polytope_vertices(A, b):
             vertices.append(V[i, 1:])
     return vertices
 
-
-def domain_volume(self, A, A_hat, b):
-    """Calculating the volume of the FB-domain.
-
-    Input arguments A and b define the domain feasible region as Ax<=b, the dimensionality of A
-    defines whether the volume includes the whole domain or just the plottet projection. 
-    """
-    try:
-        # The vertex enumeration compute_polytope_vertices does sometimes
-        # fail without clear indication. To solve, the vertices are found 
-        # for known domain halpfspaces. 
-        
-        tmp = spatial.ConvexHull(A/b.reshape(len(A), 1)).vertices
-        points = compute_polytope_vertices(A[tmp, :]/b[tmp].reshape(len(tmp), 1), np.ones(len(tmp)))
-        # points = compute_polytope_vertices(A[tmp, :], b[tmp])
-        hull = spatial.ConvexHull(points)
-        hull = spatial.ConvexHull(points)
-        return hull.volume/1e6
-    except QhullError:
-        try:
-            print("Cannot calculate volume in full dimensionality.")
-            tmp = spatial.ConvexHull(A_hat/b.reshape(len(A_hat), 1)).vertices
-            points = compute_polytope_vertices(A_hat[tmp, :]/b[tmp].reshape(len(tmp), 1), np.ones(len(tmp)))
-            # points = compute_polytope_vertices(A[tmp, :], b[tmp])
-            hull = spatial.ConvexHull(points)
-            # print("Returning area of plottet domain slice.")
-            return hull.volume/1e6
-        except QhullError:
-            print("Error in domain volume calculation.")
-            return 0
 
 def domain_feasible_region_indices(A, b):
     """Determining the feasible region of the FB domain, utilizing a convexhull algorithm.
@@ -309,7 +277,7 @@ class FBDomainPlots():
         return vertices_sorted[:, [0,1]]
 
     def generate_flowbased_domain(self, domain_x, domain_y, timestep, filename_suffix=None, 
-                                  exchange=None, lta=None, mcp=None, ltn=None, plot_limits=None):
+                                  exchange=None, lta_domain=None):
         """Create FB Domain for specified zones and timesteps. 
         
         Parameters
@@ -345,32 +313,15 @@ class FBDomainPlots():
             ram_correction = np.dot(domain_copy[non_domain_ex["from"]].values - domain_copy[non_domain_ex["to"]].values, non_domain_ex["exchange"].values)
             # ram_correction = np.dot(domain_copy[exchange["from"]].values - domain_copy[exchange["to"]].values, exchange["exchange"].values)
             domain_info.loc[:, "ram"] = domain_info.loc[:, "ram"] - ram_correction
-            print("Test", len(domain_info[domain_info.ram < 1]))
-            ram_threshold = 1
-            if not domain_info[domain_info.ram < ram_threshold].empty:
-                print("Correction caused negative rams!")
-                domain_info.loc[domain_info.ram < ram_threshold, "ram"] = ram_threshold
-                # t = domain_info.loc[domain_info.ram < 1]
-                # domain_info = domain_info[domain_info.ram > ram_threshold].reset_index()
+        
+        ram_threshold = 1
+        if not domain_info[domain_info.ram < ram_threshold].empty:
+            print("Correction caused negative rams!")
+            domain_info.loc[domain_info.ram < ram_threshold, "ram"] = ram_threshold
+            t = domain_info.loc[domain_info.ram <= ram_threshold]
+            print(t)
+            # domain_info = domain_info[domain_info.ram > ram_threshold].reset_index()
 
-        # if isinstance(mcp, pd.Series):
-        #     print("Correcting Domain for the MCP")
-
-        #     # Find Exchange that is not part of the domain plot
-        #     domain_zones = list(set(domain_x + domain_y))
-        #     non_domain_zones = [z for z in self.zones if z not in domain_zones]
-        #     # correct ram accordingly (i.e. moving the domain into the correct z axis position)
-        #     ram_correction = np.dot(domain_info[non_domain_zones].values, mcp[non_domain_zones])
-        #     domain_info.loc[:, "ram"] = domain_info.loc[:, "ram"] - ram_correction
-        #     if not domain_info[domain_info.ram < 0].empty:
-        #         print(f"Correction caused negative RAMs on {len(domain_info[domain_info.ram < 0])} CNECs")
-        #         domain_info.loc[domain_info.ram < 0.1, "ram"] = 1
-        #         # domain_info[domain_info.ram>0.1].reset_index()
-
-        # if isinstance(lta, pd.DataFrame):
-            # domain_ex = [tuple(domain_x), tuple(domain_x[::-1]), tuple(domain_y), tuple(domain_y[::-1])]
-            # lta = lta.set_index(["from", "to"]).loc[domain_ex].reset_index(drop=True)
-            # domain_info = pd.concat([domain_info, lta])
 
         # Zonal PTDF with dimensionality number of zones x CBCOs and RAM
         A = domain_info.loc[:, self.zones].values
@@ -379,8 +330,6 @@ class FBDomainPlots():
         # Checks 
         if not len(domain_x) == len(domain_y) == 2:
             raise AttributeError("Attributes domain_x, domain_y must have 2 elements")
-        # if not all(b >= 0):
-        #     raise ValueError("Not all RAM >= 0, check FB parameters.")
         if not isinstance(self.flowbased_parameters, pd.DataFrame):
             raise AttributeError("No precalculated flow based parameters available, run create_flowbased_parameters with basecase and GSK")
         elif self.flowbased_parameters[self.flowbased_parameters.timestep == timestep].empty:
@@ -408,14 +357,14 @@ class FBDomainPlots():
         # feasible_region_volume = domain_volume(self, A, A_hat, b) 
         feasible_region_volume = 0
            
-        # Specify plot dimension relative to the size plus an absolute margin.
-        if plot_limits:
-            plot_limits = plot_limits
-        else:
-            x_max, y_max = feasible_region_vertices.max(axis=0)*2
-            x_min, y_min = feasible_region_vertices.min(axis=0)*2
-            x_margin, y_margin = 0.2*abs(x_max - x_min), 0.2*abs(y_max - y_min)
-            plot_limits = ((x_max + x_margin, x_min - x_margin), (y_max + y_margin, y_min - y_margin))
+        x_max, y_max = feasible_region_vertices.max(axis=0)*2
+        x_min, y_min = feasible_region_vertices.min(axis=0)*2
+        if isinstance(lta_domain, pd.DataFrame):
+            x_max, y_max = max(x_max, lta_domain.x.max()), max(y_max, lta_domain.y.max()), 
+            x_min, y_min = min(x_min, lta_domain.x.min()), min(y_min, lta_domain.y.min()), 
+
+        x_margin, y_margin = 0.2*abs(x_max - x_min), 0.2*abs(y_max - y_min)
+        plot_limits = ((x_max + x_margin, x_min - x_margin), (y_max + y_margin, y_min - y_margin))
 
         # Bring the 2D FB Domain into a format plottable. 
         plot_equations, plot_indices = self.create_domain_plot(A_hat, b, plot_indices, plot_limits)

@@ -1,3 +1,4 @@
 from FBDomainViewer.fbmc_data import load_data, lta_constraints
 from FBDomainViewer.fbmc_domain import FBDomainPlots
 from FBDomainViewer.plot import create_fb_domain_plot
+from FBDomainViewer.lta_domain import create_lta_domain

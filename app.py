@@ -1,19 +1,17 @@
 import datetime as dt
-import itertools
 
 import dash
 import dash_bootstrap_components as dbc
-import dash_daq as daq
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import requests
 from dash import dcc
 from dash.dependencies import Input, Output, State
-from flask import request
 
-from FBDomainViewer.fbmc_data import load_data, lta_constraints
+from FBDomainViewer.fbmc_data import load_data
 from FBDomainViewer.fbmc_domain import FBDomainPlots
+from FBDomainViewer.lta_domain import create_lta_domain
 from FBDomainViewer.plot import create_fb_domain_plot
 
 external_stylesheets = [dbc.themes.BOOTSTRAP, dbc.themes.GRID, 'https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -97,16 +95,20 @@ def add_callbacks(app):
     )
     def update_domain_plot(date, hour, switches, x_domain_1, x_domain_2, y_domain_1, y_domain_2):
         shift_mcp = True if 1 in switches else False
-        show_lta = True  if 2 in switches else False
+        show_lta = True if 2 in switches else False
 
+
+        print(switches, show_lta)
         if not all(s in HUBS for s in [x_domain_1, x_domain_2, y_domain_1, y_domain_2]):
             return blank_figure()
 
         domain_x = [x_domain_1, x_domain_2]
         domain_y = [y_domain_1, y_domain_2]
-
+        domain_x=["DE", "FR"]
+        domain_y=["DE", "NL"]
         mtu = pd.Timestamp(f"{date}T{str(hour)}:00:00.000Z")
-        
+        print(mtu)
+        mtu = pd.Timestamp("2022-09-17T22:00:00.000Z")
         data = load_data(mtu)
         exchange = data["exchange"]
         domain = data["domain"].copy()
@@ -115,6 +117,7 @@ def add_callbacks(app):
         lta = data["lta"]
         ltn = data["ltn"]
 
+        lta_domain = create_lta_domain(lta, zones, domain_x, domain_y)
         
         if mcp.loc["ALBE"] > 0:
             albe_exchange = pd.DataFrame(index=[("ALBE", "ALDE")], data=[mcp.loc["ALBE"]], columns=["exchange"])
@@ -122,6 +125,7 @@ def add_callbacks(app):
             albe_exchange = pd.DataFrame(index=[("ALDE", "ALBE")], data=[mcp.loc["ALDE"]], columns=["exchange"])
         exchange = pd.concat([exchange, albe_exchange])
         
+
         fbmc = FBDomainPlots(zones, domain)
 
         timestep = domain.timestep.unique()[0]
@@ -130,13 +134,17 @@ def add_callbacks(app):
             domain_y=domain_y, 
             timestep=timestep, 
             exchange=exchange if shift_mcp else None, 
-            # lta=lta
+            lta_domain=lta_domain if show_lta else None, 
         )
+
+
         fig = create_fb_domain_plot(
             fb_domain, 
             exchange, 
             zones, 
-            lta if show_lta else None, show_plot=False)
+            lta_domain if show_lta else None, 
+            show_plot=False
+        )
         return fig
 
 
@@ -144,12 +152,12 @@ if __name__ == "__main__":
     app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
     app.layout = layout()
     add_callbacks(app)
-    default_options = {
-        "debug": True, 
+    options = {
+        "debug": False, 
         "threaded": True, 
         "use_reloader": True,
         "port": "8050", 
         "host": "127.0.0.1"
     }
-    app.run_server(**default_options)
+    app.run_server(**options)
     

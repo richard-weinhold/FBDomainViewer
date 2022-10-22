@@ -90,7 +90,7 @@ def process_final_computation(domain_response):
     data = data.loc[data[zones].notna().all(axis=1), cols]
     data.loc[data.co.isna(), "co"] = "basecase"
 
-    # df = df[~df.cb.str.contains("Constraint")]
+    data = data[~data.cb.str.contains("Constraint")]
     # df = df[df.ram > 1]
     # df.loc[df.index[:10], "iva"] = 10
     iva_copy = data[data.iva > 0].copy()
