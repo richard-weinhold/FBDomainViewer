@@ -147,11 +147,12 @@ def add_callbacks(app):
         )
         return fig
 
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+app.layout = layout()
+add_callbacks(app)
+server = app.server
 
 if __name__ == "__main__":
-    app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-    app.layout = layout()
-    add_callbacks(app)
     options = {
         "debug": False, 
         "threaded": True, 
