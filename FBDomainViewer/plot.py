@@ -1,8 +1,10 @@
+import cvxpy as cp
 import numpy as np
+import pandas as pd
 import plotly.graph_objects as go
 from plotly.offline import plot
-from FBMCViewer.fbmc_data import lta_constraints
-import cvxpy as cp
+
+from FBDomainViewer.fbmc_data import lta_constraints
 
 
 def sort_vertices(vertices_x,vertices_y):
@@ -30,8 +32,8 @@ def sort_vertices(vertices_x,vertices_y):
     return vertices_sorted[:, 0], vertices_sorted[:, 1]
 
 def lta_bounds(lta, zones, domain_x, domain_y):
-    domain_x = ["BE", "FR"]
-    domain_y = ["DE", "FR"]
+    # domain_x = ["BE", "FR"]
+    # domain_y = ["DE", "FR"]
     lta_constr = lta_constraints(lta, zones)
     A = lta_constr.loc[:, zones].values
     b = lta_constr.lta.values

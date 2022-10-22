@@ -3,24 +3,20 @@ import os
 import numpy as np 
 import pandas as pd
 
-os.chdir("C:/Users/riw/Documents/repositories/fbmc_viewer")
+os.chdir("C:/Users/riw/Documents/repositories/FBDomainViewer")
 
-from FBDomainViewer.fbmc_data import load_data, lta_constraints
+from FBDomainViewer import load_data, lta_constraints
 from FBDomainViewer.fbmc_domain import FBDomainPlots
 from FBDomainViewer.plot import create_fb_domain_plot
-
-
-
 
 # %%
 if __name__ == "__main__":
     mtu = pd.Timestamp("2022-09-17T22:00:00.000Z")
     mtu = pd.Timestamp("2022-09-18T02:00:00.000Z")
     mtu = pd.Timestamp("2022-09-19T05:00:00.000Z")
-    mtu = pd.Timestamp("2022-09-27T03:00:00.000Z")
+    mtu = pd.Timestamp("2022-08-16T03:00:00.000Z")
     
     data = load_data(mtu)
-    
     domain = data["domain"].copy()
     zones = data["zones"]
     mcp=data["mcp"]

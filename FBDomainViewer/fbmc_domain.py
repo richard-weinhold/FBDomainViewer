@@ -4,13 +4,10 @@ import logging
 import cdd
 import numpy as np
 import pandas as pd
-import progress
-from progress.bar import Bar
 # from pypoman import compute_polytope_vertices
 from scipy import spatial
 from scipy.spatial.qhull import QhullError
 
-progress.HIDE_CURSOR, progress.SHOW_CURSOR = '', ''
 
 def compute_polytope_vertices(A, b):
     """

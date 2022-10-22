@@ -116,7 +116,7 @@ def process_lta(lta_response, mtu):
 
     zones_dict = {c: c.replace("border_", "") for c in data.columns if "border" in c}
     lta = data.rename(columns=zones_dict).melt(id_vars="dateTimeUtc")
-    lta[["from", "to"]] = lta.variable.str.split("_", 1, expand=True)
+    lta[["from", "to"]] = lta.variable.str.split("_", n=1, expand=True)
     lta = lta[(pd.to_datetime(lta.dateTimeUtc) == mtu)].drop(["variable", "dateTimeUtc"], axis=1)
     lta = lta.rename(columns={"value": "lta"}).set_index(["from", "to"], drop=True)
     return lta
@@ -127,7 +127,7 @@ def process_ltn(ltn_response, mtu):
 
     zones_dict = {c: c.replace("border_", "") for c in data.columns if "border" in c}
     ltn = data.rename(columns=zones_dict).melt(id_vars="dateTimeUtc")
-    ltn[["from", "to"]] = ltn.variable.str.split("_", 1, expand=True)
+    ltn[["from", "to"]] = ltn.variable.str.split("_", n=1, expand=True)
     ltn = ltn[(pd.to_datetime(ltn.dateTimeUtc) == mtu)].drop(["variable", "dateTimeUtc"], axis=1)
     ltn = ltn.rename(columns={"value": "ltn"}).set_index(["from", "to"], drop=True)
     return ltn
@@ -138,7 +138,7 @@ def process_exchange(exchange_response, mtu):
 
     zones_dict = {c: c.replace("border_", "") for c in data.columns if "border" in c}
     exchange = data.rename(columns=zones_dict).melt(id_vars="dateTimeUtc")
-    exchange[["from", "to"]] = exchange.variable.str.split("_", 1, expand=True)
+    exchange[["from", "to"]] = exchange.variable.str.split("_", n=1, expand=True)
     
     exchange = exchange[pd.to_datetime(exchange.dateTimeUtc) == mtu].drop(["variable", "dateTimeUtc"], axis=1)
     exchange = exchange.rename(columns={"value": "exchange"}).set_index(["from", "to"], drop=True)
