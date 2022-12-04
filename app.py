@@ -68,6 +68,7 @@ def layout():
                     options=[
                         {"label": "Shift to MCP:", "value": 1},
                         {"label": "Show LTA Bounds", "value": 2},
+                        {"label": "Show LTA Bounds 2", "value": 3},
                         ],
                     value=[],
                     id="switches-domain",
@@ -96,6 +97,7 @@ def add_callbacks(app):
     def update_domain_plot(date, hour, switches, x_domain_1, x_domain_2, y_domain_1, y_domain_2):
         shift_mcp = True if 1 in switches else False
         show_lta = True if 2 in switches else False
+        show_lta2 = True if 3 in switches else False
 
 
         print(switches, show_lta)
@@ -104,11 +106,11 @@ def add_callbacks(app):
 
         domain_x = [x_domain_1, x_domain_2]
         domain_y = [y_domain_1, y_domain_2]
-        domain_x=["DE", "FR"]
-        domain_y=["DE", "NL"]
+        # domain_x=["DE", "FR"]
+        # domain_y=["DE", "NL"]
         mtu = pd.Timestamp(f"{date}T{str(hour)}:00:00.000Z")
         print(mtu)
-        mtu = pd.Timestamp("2022-09-17T22:00:00.000Z")
+        # mtu = pd.Timestamp("2022-09-17T22:00:00.000Z")
         data = load_data(mtu)
         exchange = data["exchange"]
         domain = data["domain"].copy()
@@ -117,7 +119,10 @@ def add_callbacks(app):
         lta = data["lta"]
         ltn = data["ltn"]
 
-        lta_domain = create_lta_domain(lta, zones, domain_x, domain_y)
+        if show_lta2:
+            lta_domain = create_lta_domain(lta, zones, domain_x, domain_y, mcp)
+        else:
+            lta_domain = create_lta_domain(lta, zones, domain_x, domain_y)
         
         if mcp.loc["ALBE"] > 0:
             albe_exchange = pd.DataFrame(index=[("ALBE", "ALDE")], data=[mcp.loc["ALBE"]], columns=["exchange"])

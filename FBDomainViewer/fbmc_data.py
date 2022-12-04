@@ -71,6 +71,7 @@ def lta_constraints(lta, zones):
         tmp_data = [f, t, lta.loc[(f,t), "lta"]]
         lta_constraints.append(tmp_data + list(tmp_ptdf))
     return pd.DataFrame(lta_constraints, columns=["from", "to", "lta"] + zones)
+
     
 def process_final_computation(domain_response):
     # file = r"C:\Users\riw\Documents\repositories\fbmc_viewer\data\FinalComputation 2022-09-18 0000 - 2022-09-18 0100.csv"

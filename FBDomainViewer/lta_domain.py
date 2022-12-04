@@ -29,7 +29,7 @@ def sort_vertices(vertices_x, vertices_y):
     return vertices_sorted[:, 0], vertices_sorted[:, 1]
 
 
-def create_lta_domain(lta, zones, domain_x, domain_y):
+def create_lta_domain(lta, zones, domain_x, domain_y, mcp=None):
     # domain_x = ["BE", "FR"]
     # domain_y = ["DE", "FR"]
     lta_constr = lta_constraints(lta, zones)
@@ -37,6 +37,8 @@ def create_lta_domain(lta, zones, domain_x, domain_y):
     b = lta_constr.lta.values
     domain_x_indices = [zones.index(z) for z in domain_x]
     domain_y_indices = [zones.index(z) for z in domain_y]
+
+    other_bz_indices= [i for i in range(len(zones)) if i not in domain_x_indices + domain_y_indices]
     ex = cp.Variable(len(b))
     netpos = cp.Variable(len(zones))
     
@@ -46,19 +48,27 @@ def create_lta_domain(lta, zones, domain_x, domain_y):
     for i in [1, -1]:
         constraints = [
             # sum(netpos) == 0, 
-            netpos[:1] == 0, 
+            # netpos[:1] == 0, 
             ex <= b,
             ex >= 0,
             # sum(netpos[domain_x_indices]) == 0,
             # sum(netpos[domain_y_indices]) == 0,
             netpos == A.T@ex
             ]
+        if isinstance(mcp, pd.Series):
+            print("Here")
+            # mcp = mcp.values
+            # print(mcp[other_bz_indices])
+            constraints.append(sum(netpos) == 0)
+
         obj = i*netpos[domain_x_indices]@(np.array([1, -1])) 
         objective = cp.Maximize(obj)
         prob = cp.Problem(objective, constraints)
         prob.solve()
+        print("Obj", prob.status)
         x.append(netpos[domain_x_indices[0]].value)
         y.append(0)
+        print(netpos.value)
             
     for i in [1, -1]:
         constraints = [
@@ -70,14 +80,14 @@ def create_lta_domain(lta, zones, domain_x, domain_y):
             # sum(netpos[domain_y_indices]) == 0,
             netpos == A.T@ex
         ]
-        
+
         obj = i*netpos[domain_y_indices]@(np.array([1, -1])) 
         objective = cp.Maximize(obj)
         prob = cp.Problem(objective, constraints)
         prob.solve()
         y.append(netpos[domain_y_indices[0]].value)
         x.append(0)
-        print(netpos[domain_y_indices[0]].value)
+
     x,y = sort_vertices(x,y)
     
     lta_domain = pd.DataFrame()
