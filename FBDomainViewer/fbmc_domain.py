@@ -304,13 +304,12 @@ class FBDomainPlots():
             domain_ex = [tuple(domain_x), tuple(domain_x[::-1]), tuple(domain_y), tuple(domain_y[::-1])]
             
             tmp_exchange = exchange.reset_index()
-            
             tmp_exchange = tmp_exchange[tmp_exchange["from"].isin(self.zones)&tmp_exchange["to"].isin(self.zones)]
             # non_core_zones = [z for z in set(list(exchange["from"]) + list(exchange["to"])) if z not in domain_copy.columns]
             # domain_copy[non_core_zones] = 0
             non_domain_ex = tmp_exchange[~tmp_exchange[["from", "to"]].apply(tuple, axis=1).isin(domain_ex)]
             # correct ram accordingly (i.e. moving the domain into the correct z axis position)
-            ram_correction = np.dot(domain_copy[non_domain_ex["from"]].values - domain_copy[non_domain_ex["to"]].values, non_domain_ex["exchange"].values)
+            ram_correction = np.dot(domain_copy[non_domain_ex["from"]].values - domain_copy[non_domain_ex["to"]].values, non_domain_ex["FlowFB"].values)
             # ram_correction = np.dot(domain_copy[exchange["from"]].values - domain_copy[exchange["to"]].values, exchange["exchange"].values)
             domain_info.loc[:, "ram"] = domain_info.loc[:, "ram"] - ram_correction
         
@@ -320,6 +319,7 @@ class FBDomainPlots():
             domain_info.loc[domain_info.ram < ram_threshold, "ram"] = ram_threshold
             t = domain_info.loc[domain_info.ram <= ram_threshold]
             print(t)
+            print(t.ram)
             # domain_info = domain_info[domain_info.ram > ram_threshold].reset_index()
 
 
@@ -372,10 +372,13 @@ class FBDomainPlots():
 
         print(f"Number of CBCOs defining the domain {len(feasible_region_vertices[:, 0]) - 1}")
 
-        plot_information = {"timestep": timestep,
-                            "domain_x": domain_x, "domain_y": domain_y,
-                            "filename_suffix": filename_suffix, 
-                            "plot_limits": plot_limits}
+        plot_information = {
+            "timestep": timestep,
+            "domain_x": domain_x, 
+            "domain_y": domain_y,
+            "filename_suffix": filename_suffix, 
+            "plot_limits": plot_limits
+        }
         
         # FBDomain Class to store all relevant data. 
         fbmc_plot = FBDomain(plot_information, plot_equations, feasible_region_vertices, 

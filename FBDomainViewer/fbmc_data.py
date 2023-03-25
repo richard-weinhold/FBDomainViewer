@@ -52,16 +52,6 @@ def download_data(mtu):
     
     return data
     
-    # print(t)
-    # c = mcp_response.json()
-    # dff = 
-    # dff.presolved   
-    # # len(dff)
-    # # dff
-    
-
-    #%%
-    
 def lta_constraints(lta, zones):
     lta_constraints = []
     for (f,t) in lta.index:
@@ -112,7 +102,6 @@ def process_mcp(mcp_response, mtu):
     return data.loc[data.index[0]]
     
 def process_lta(lta_response, mtu): 
-    lta_response
     data = pd.DataFrame.from_dict(lta_response.json()["lta"]).drop("id", axis=1)
 
     zones_dict = {c: c.replace("border_", "") for c in data.columns if "border" in c}
@@ -123,9 +112,8 @@ def process_lta(lta_response, mtu):
     return lta
     
 def process_ltn(ltn_response, mtu): 
-    ltn_response
-    data = pd.DataFrame.from_dict(ltn_response.json()["ltn"]).drop("id", axis=1)
 
+    data = pd.DataFrame.from_dict(ltn_response.json()["ltn"]).drop("id", axis=1)
     zones_dict = {c: c.replace("border_", "") for c in data.columns if "border" in c}
     ltn = data.rename(columns=zones_dict).melt(id_vars="dateTimeUtc")
     ltn[["from", "to"]] = ltn.variable.str.split("_", n=1, expand=True)

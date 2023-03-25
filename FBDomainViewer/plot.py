@@ -3,8 +3,6 @@ import numpy as np
 import plotly.graph_objects as go
 from plotly.offline import plot
 
-
-
 def create_fb_domain_plot(fb_domain, exchange, zones, lta_domain, show_plot=True, filepath=None):
     """Create FlowBased Domain plot. 
 
@@ -15,7 +13,6 @@ def create_fb_domain_plot(fb_domain, exchange, zones, lta_domain, show_plot=True
     Input argument remains an instance of :class:`~pomato.visualization.FBDomain` which can be
     created by utilizing :meth:`~pomato.visualization.FBDomainPlots` module. 
     """
-    # fb_domain = domain_plot
     fig = go.Figure()
     n0_lines_x, n0_lines_y = [], []
     n1_lines_x, n1_lines_y = [], []
@@ -75,16 +72,16 @@ def create_fb_domain_plot(fb_domain, exchange, zones, lta_domain, show_plot=True
                 hovertemplate=hovertemplate
             )
         )
-    
-    fig.add_trace(
-        go.Scatter(
-            x=n1_lines_x, y=n1_lines_y, name='N-1 Constraints',
-            line = dict(width = 1.5, color="lightgray"),
-            opacity=0.8,
-            customdata=np.vstack(hover_data_n1),
-            hovertemplate=hovertemplate
+    if len(hover_data_n1) > 0:
+        fig.add_trace(
+            go.Scatter(
+                x=n1_lines_x, y=n1_lines_y, name='N-1 Constraints',
+                line = dict(width = 1.5, color="lightgray"),
+                opacity=0.8,
+                customdata=np.vstack(hover_data_n1),
+                hovertemplate=hovertemplate
+            )
         )
-    )
     fig.add_trace(
             go.Scatter(
                 x=fb_domain.feasible_region_vertices[:, 0], 
@@ -96,9 +93,10 @@ def create_fb_domain_plot(fb_domain, exchange, zones, lta_domain, show_plot=True
         )
     
     # exchange.set_index(["from", "to"], inplace=True)
-    nex_x = exchange.loc[tuple(fb_domain.domain_x), "exchange"] - exchange.loc[tuple(fb_domain.domain_x[::-1]), "exchange"]
-    nex_y = exchange.loc[tuple(fb_domain.domain_y), "exchange"] - exchange.loc[tuple(fb_domain.domain_y[::-1]), "exchange"]
-    fig.add_trace(go.Scatter(x=[nex_x], y=[nex_y], mode="markers", line=dict(width = 1, color="red"), name="Market Outcome"))
+    for col, name in [("Flow", "Market Outcome (inkl. ELI)"), ("FlowFB", "FB Market Outcome")]:
+        nex_x = exchange.loc[tuple(fb_domain.domain_x), col] - exchange.loc[tuple(fb_domain.domain_x[::-1]), col]
+        nex_y = exchange.loc[tuple(fb_domain.domain_y), col] - exchange.loc[tuple(fb_domain.domain_y[::-1]), col]
+        fig.add_trace(go.Scatter(x=[nex_x], y=[nex_y], mode="markers", line=dict(width = 1, color="red"), name=name))
     
     if isinstance(lta_domain, pd.DataFrame):
         fig.add_trace(
@@ -114,7 +112,14 @@ def create_fb_domain_plot(fb_domain, exchange, zones, lta_domain, show_plot=True
         hovermode="closest",
         xaxis_title=" > ".join(fb_domain.domain_x),
         yaxis_title=" > ".join(fb_domain.domain_y),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="left",
+        )
     )
+
 
     if filepath:
         fig.write_html(str(filepath))
