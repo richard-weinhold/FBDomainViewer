@@ -1,6 +1,8 @@
-*__pycache__*
-.vscode/*
-.spyproject/*
-venv/*
-data/_old/*
+# exclude Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# local folders
+data/*.db
+proxy.json
 *.html

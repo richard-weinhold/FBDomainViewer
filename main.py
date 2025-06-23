@@ -1,99 +1,79 @@
-
-import os 
-import numpy as np 
+import datetime as dt
 import pandas as pd
-import cvxpy as cp
-import time
+import requests
+from pathlib import Path
+from plotly.offline import plot
 
-from FBDomainViewer import load_data, lta_constraints
-from FBDomainViewer.fbmc_domain import FBDomainPlots
-from FBDomainViewer.plot import create_fb_domain_plot
-from FBDomainViewer.lta_domain import sort_vertices
-from FBDomainViewer.lta_domain import create_ELI_constraints
+import json
 
-# %%
+from domain_viewer.data_processing import load_data, ZONES, add_alegro_exchange
+from domain_viewer.fbmc_domain import FBDomainPlots
+from domain_viewer.lta_domain import calculate_FB_exchange
+from domain_viewer.fbmc_domain_plot import create_fb_domain_plot
+
+HUBS = [
+    'AT', 'BE', 'CZ', 'DE', 'FR', 'HR', 
+    'HU', 'NL', 'PL', 'RO', 'SI', 'SK']
+
 if __name__ == "__main__":
-    # mtu = pd.Timestamp("2022-12-06T22:00:00.000Z")
-    mtu = pd.Timestamp("2022-09-17T22:00:00.000Z")
-    # mtu = pd.Timestamp("2022-09-18T02:00:00.000Z")
-    # mtu = pd.Timestamp("2022-09-19T05:00:00.000Z")
-    # mtu = pd.Timestamp("2022-08-16T03:00:00.000Z")
-    
-    domain_x=["DE", "FR"]
-    domain_y=["DE", "NL"]
 
-    data = load_data(mtu)
+    # Setup 
+    date = "2025-06-11"
+    hour = "13"
+    domain_x = ["DE", "FR"]
+    domain_y = ["DE", "AT"]
+    shift_mcp = True
+
+    request_session = requests.Session()
+    request_session.headers.update({
+        'user-agent': 'riw@50Hertz',
+        'Authorization': 'DomainViewer'
+    })
+    
+    if Path.cwd().joinpath("proxy.json").is_file():
+        with open(Path.cwd().joinpath("proxy.json"), 'r') as f:
+            proxy = json.load(f)
+        request_session.proxies.update(proxy)
+
+    mtu = pd.Timestamp(
+        dt.datetime.strptime(f"{date}T{str(hour).zfill(2)}", "%Y-%m-%dT%H")
+        ).tz_localize("Europe/Berlin")
+    
+    print(mtu)
+    data = load_data(mtu, request_session)
     domain = data["domain"].copy()
-    zones = data["zones"]
-    mcp=data["mcp"]
+    mcp = data["mcp"].loc[mtu.isoformat()]
     lta = data["lta"]
-    ltn = data["ltn"]
-    exchange = data["exchange"]
 
-    if mcp.loc["ALBE"] > 0:
-        albe_exchange = pd.DataFrame(index=[("ALBE", "ALDE")], data=[mcp.loc["ALBE"]], columns=["exchange"])
-    else:
-        albe_exchange = pd.DataFrame(index=[("ALDE", "ALBE")], data=[mcp.loc["ALDE"]], columns=["exchange"])
-
-    # for f,t in ltn.index:
-    #     mcp.loc[f] += ltn.loc[(f,t), "ltn"]
-    #     mcp.loc[t] -= ltn.loc[(f,t), "ltn"]
-
-    exchange = pd.concat([exchange, albe_exchange])
-    cond = exchange.index.get_level_values("from").isin(zones)&exchange.index.get_level_values("to").isin(zones)
-    exchange = exchange[cond]
-    
-    # %%
-    print("Number of IVAs", len(domain[domain.iva > 0]))
-
-    # ram_threshold = 1
-    # domain.loc[domain.ram < ram_threshold, "ram"] = ram_threshold
-    # domain.loc[46, "ram"] = 5
-
-    lta.to_csv("lta.csv")
-    domain.loc[:, zones].to_csv("ptdf.csv", index=False)
-    domain.ram.to_csv("ram.csv", index=False)
-    mcp.to_csv("mcp.csv")
-    exchange.to_csv("exchange.csv")
-
-    
-    prob = create_ELI_constraints(domain, lta, zones)
-    constr = prob.constraints 
-    for z in range(len(zones)):
-        constr.append(prob.var_dict["NetPos"][z] == mcp[zones[z]])
-        for zz in range(len(zones)):
-            if (zones[z], zones[zz]) in exchange.index:
-                constr.append(prob.var_dict["Flow"][z,zz] == exchange.loc[(zones[z], zones[zz]), "exchange"])            
-            else:
-                constr.append(prob.var_dict["Flow"][z,zz] <= 0)
-
-    start_time  = time.time()
-    obj = -sum(prob.var_dict["SlackFB"])*1e4 + prob.var_dict["Alpha1"]*1000 
-    objective = cp.Maximize(obj)
-    prob = cp.Problem(objective, constr)
-    prob.solve(
-        solver=cp.SCIPY, 
-        scipy_options={
-            "method": "highs-ds",
-            "presolve": False
-        },
-        warm_start=True,
-    
+    exchange = add_alegro_exchange(data["exchange"], mcp, mtu)
+    cond = (
+        exchange.index.get_level_values("from").isin(ZONES)
+        &exchange.index.get_level_values("to").isin(ZONES)
     )
-    print(prob.status)
-    print(obj.value)
-    print("Sum Slack", sum(prob.var_dict["SlackFB"].value))
+    exchange = exchange[cond]
+    eli_exchange, eli_np, ram_correction, alpha = calculate_FB_exchange(domain, lta, ZONES, mcp, exchange)
+    domain.loc[ram_correction.index, "ram"] += ram_correction.ram
+    domain.loc[:, "ram"] *= alpha
+    if not ram_correction.empty:
+        print("RAM Correction", domain.loc[ram_correction.index, ["cb", "co", "ram"]])
 
-    cond = prob.var_dict["SlackFB"].value > 1e-2
-    print("On", domain.loc[cond, ["cb", "co"]])
-    domain_copy = domain.loc[cond].copy()
-    domain_copy.loc[:, "ram"] += prob.var_dict["SlackFB"].value[cond]
- 
-    print("Alpha 1 / 2", prob.var_dict["Alpha1"].value, prob.var_dict["Alpha2"].value)
-    df = exchange.copy()
-    df["Flow"] = [prob.var_dict["Flow"].value[zones.index(i), zones.index(j)] for i,j in exchange.index]
-    df["FlowFB"] = [prob.var_dict["FlowFB"].value[zones.index(i), zones.index(j)] for i,j in exchange.index]
-    df["FlowLTA"] = [prob.var_dict["FlowLTA"].value[zones.index(i), zones.index(j)] for i,j in exchange.index]
-    # print(df)
-    end_time = time.time()
-    print("total time taken: ", end_time - start_time)
+    fbmc = FBDomainPlots(ZONES, domain)
+    fb_domain = fbmc.generate_flowbased_domain(
+        domain_x=domain_x,
+        domain_y=domain_y,
+        mtu=mtu,
+        exchange=eli_exchange if shift_mcp else None,
+        lta_domain=None,
+    )
+
+    fig = create_fb_domain_plot(
+        fb_domain,
+        eli_exchange,
+        ZONES,
+        None,
+        alpha,
+        show_plot=True
+    )
+
+    fig.write_html("fb_domain.html", full_html=False, include_plotlyjs='cdn')
+    plot(fig)
