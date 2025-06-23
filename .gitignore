@@ -6,3 +6,4 @@ __pycache__/
 data/*.db
 proxy.json
 *.html
+!readme-plot.html
