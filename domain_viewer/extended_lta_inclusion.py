@@ -4,30 +4,6 @@ import numpy as np
 import pandas as pd 
 import time
 
-def sort_vertices(vertices_x, vertices_y):
-    vertices_sorted = []
-    for idx in range(0, len(vertices_x)):
-        radius = np.sqrt(np.power(vertices_y[idx], 2) + np.power(vertices_x[idx], 2))
-        if vertices_x[idx] >= 0 and vertices_y[idx] >= 0:
-            vertices_sorted.append([vertices_x[idx], vertices_y[idx],
-                               np.arcsin(vertices_y[idx]/radius)*180/(2*np.pi)])
-        elif vertices_x[idx] < 0 and vertices_y[idx] > 0:
-            vertices_sorted.append([vertices_x[idx], vertices_y[idx],
-                               180 - np.arcsin(vertices_y[idx]/radius)*180/(2*np.pi)])
-        elif vertices_x[idx] <= 0 and vertices_y[idx] <= 0:
-            vertices_sorted.append([vertices_x[idx], vertices_y[idx],
-                               180 - np.arcsin(vertices_y[idx]/radius)*180/(2*np.pi)])
-        elif vertices_x[idx] > 0 and vertices_y[idx] < 0:
-            vertices_sorted.append([vertices_x[idx], vertices_y[idx],
-                               360 + np.arcsin(vertices_y[idx]/radius)*180/(2*np.pi)])
-    from operator import itemgetter
-    vertices_sorted = sorted(vertices_sorted, key=itemgetter(2))
-    
-    ## Add first element to draw complete circle
-    vertices_sorted.append(vertices_sorted[0])
-    vertices_sorted = np.array(vertices_sorted)   
-    return vertices_sorted[:, 0], vertices_sorted[:, 1]
-
 def create_ELI_constraints(domain, lta, zones):
     
     ram_threshold = 1

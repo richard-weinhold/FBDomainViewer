@@ -5,10 +5,12 @@ import datetime as dt
 import json
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-ZONES = ['AT', 'BE', 'CZ', 'DE', 'FR', 'HR', 'HU', 'NL', 'PL', 'RO', 'SI', 'SK', 'ALBE', 'ALDE']
+ZONES = [
+    'AT', 'BE', 'CZ', 'DE', 'FR', 'HR', 'HU', 
+    'NL', 'PL', 'RO', 'SI', 'SK', 'ALBE', 'ALDE'
+]
 
 def load_data(mtu, request_session, force_reload=False):
-
     try:
         df = pd.read_feather("data/domain.db", columns=["mtu"])
         df = df[df["mtu"] == mtu.isoformat()]

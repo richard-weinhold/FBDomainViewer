@@ -2,7 +2,10 @@ Domain-Viewer
 =============
 
 The domain-viewer aims to visualize the day-ahead flow-based domain published on the [JAO Publication Tool](https://publicationtool.jao.eu/core/). 
-
+<p align="center">
+    <!-- <img height="300" src="data/readme-plot.png"> -->
+    <img height="300" src="https://raw.githubusercontent.com/richard-weinhold/FBDomainViewer/main/data/readme-plot.png">
+</p>
 
 Installation
 ------------
@@ -31,6 +34,8 @@ In case you need a proxy to access the JAO PublicationTool, create a *proxy.json
         "http": "http://<user>:<pw>@<proxy-address>",
         "https": "https://<user>:<pw>@<proxy-address>"
     }
+
+The domain-viewer will download and cache the data for each mtu in the *data* folder in the *feather* format. 
 
 Description:
 ------------
