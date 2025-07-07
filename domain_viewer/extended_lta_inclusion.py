@@ -1,4 +1,3 @@
-from domain_viewer.data_processing import lta_constraints
 import cvxpy as cp
 import numpy as np 
 import pandas as pd 

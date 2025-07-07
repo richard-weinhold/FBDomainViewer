@@ -11,18 +11,14 @@ from domain_viewer.fbmc_domain import FBDomainPlots
 from domain_viewer.extended_lta_inclusion import calculate_FB_exchange
 from domain_viewer.fbmc_domain_plot import create_fb_domain_plot
 
-HUBS = [
-    'AT', 'BE', 'CZ', 'DE', 'FR', 'HR', 
-    'HU', 'NL', 'PL', 'RO', 'SI', 'SK']
-
 if __name__ == "__main__":
 
     # Setup 
-    date = "2025-06-11" # Businessday
-    hour = "13" # Hour in CET
+    date = "2025-07-07" # Businessday
+    hour = "19" # Hour in CET
     domain_x = ["DE", "FR"] # Domain x-Axis
     domain_y = ["DE", "AT"] # Domain y-Axis
-    shift_mcp = False # Shift Domain to Market Clearing Point 
+    shift_mcp = True # Shift Domain to Market Clearing Point 
 
     request_session = requests.Session()
     request_session.headers.update({
@@ -64,7 +60,7 @@ if __name__ == "__main__":
     if not ram_correction.empty:
         print("RAM Correction", domain.loc[ram_correction.index, ["cb", "co", "ram"]])
 
-    # Calculate flow-based Domain, i.e. creating the relevant plottable points/lines
+    # Calculate flow-based Domain, i.e. creating the relevant plot-points and lines
     fbmc = FBDomainPlots(ZONES, domain)
     fb_domain = fbmc.generate_flowbased_domain(
         domain_x=domain_x,

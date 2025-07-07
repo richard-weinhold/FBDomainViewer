@@ -23,7 +23,7 @@ def create_fb_domain_plot(fb_domain, exchange, zones, lta_domain, alpha, show_pl
         n0_lines_y.extend(fb_domain.domain_equations[i][1])
         n0_lines_x.append(None)
         n0_lines_y.append(None)
-        data = [tmp.loc[i, "cb"], tmp.loc[i, "co"], tmp.loc[i, "ram"]]
+        data = [tmp.loc[i, "cb"], tmp.loc[i, "co"], tmp.loc[i, "tso"], tmp.loc[i, "ram"]]
         hover_data_n0.append(np.vstack([[data for n in range(0, hover_points)], [None]*len(data)]))
     
     for i in tmp[cond_iva].index:
@@ -31,7 +31,7 @@ def create_fb_domain_plot(fb_domain, exchange, zones, lta_domain, alpha, show_pl
         iva_y.extend(fb_domain.domain_equations[i][1])
         iva_x.append(None)
         iva_y.append(None)
-        data = [tmp.loc[i, "cb"], tmp.loc[i, "co"], tmp.loc[i, "ram"]]
+        data = [tmp.loc[i, "cb"], tmp.loc[i, "co"], tmp.loc[i, "tso"], tmp.loc[i, "ram"]]
         hover_data_iva.append(np.vstack([[data for n in range(0, hover_points)], [None]*len(data)]))
     
     for i in tmp[(~cond_basecase)&(~cond_iva)].index:
@@ -39,7 +39,7 @@ def create_fb_domain_plot(fb_domain, exchange, zones, lta_domain, alpha, show_pl
         n1_lines_y.extend(fb_domain.domain_equations[i][1])
         n1_lines_x.append(None)
         n1_lines_y.append(None)
-        data = [tmp.loc[i, "cb"], tmp.loc[i, "co"], tmp.loc[i, "ram"]]
+        data = [tmp.loc[i, "cb"], tmp.loc[i, "co"], tmp.loc[i, "tso"], tmp.loc[i, "ram"]]
         hover_data_n1.append(np.vstack([[data for n in range(0, hover_points)], [None]*len(data)]))
 
 
@@ -50,7 +50,8 @@ def create_fb_domain_plot(fb_domain, exchange, zones, lta_domain, alpha, show_pl
         [
             "cb: %{customdata[0]}", 
             "co: %{customdata[1]}", 
-            "ram: %{customdata[2]:.2f}"
+            "tso: %{customdata[2]}", 
+            "ram: %{customdata[3]:.2f}"
         ]) + "<extra></extra>"
 
     if len(hover_data_n0) > 0:

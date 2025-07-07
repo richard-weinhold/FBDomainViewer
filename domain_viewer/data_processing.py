@@ -96,16 +96,6 @@ def download_and_save_data(mtu, request_session):
         df.to_feather(f"data/{k}.db")
     return data
 
-def lta_constraints(lta, zones):
-    constraints = []
-    for (f,t) in lta.index:
-        tmp_ptdf = [0 for z in zones]
-        tmp_ptdf[zones.index(f)] = 1
-        tmp_ptdf[zones.index(t)] = -1
-        tmp_data = [f, t, lta.loc[(f,t), "lta"]]
-        constraints.append(tmp_data + list(tmp_ptdf))
-    return pd.DataFrame(constraints, columns=["from", "to", "lta"] + zones)
-
 def process_final_computation(domain_response, mtu):
     """Process presolved FB Domain from JAO Publication Tool"""
     data = pd.DataFrame.from_dict(domain_response.json()["data"])
